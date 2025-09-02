@@ -1015,7 +1015,9 @@ async function loadECJAndData(){
       geoLayerInteractive = L.geoJSON({type:'FeatureCollection', features: arcFeatures},{ style:()=>({ color:'#94a3b8', weight:1, fillColor:'#e5e7eb', fillOpacity:0.6 })}).addTo(mapInteractive);
     }
 
-    const partyTotals={}, partySeats={}, detailsByConst={}, closestArr=[];
+    const partyTotals={JLP:0, PNP:0, JPP:0, UIC:0, Other:0};
+const partySeats ={JLP:0, PNP:0, JPP:0, UIC:0, Other:0};
+const detailsByConst={}, closestArr=[];
     Object.values(data).forEach(c=>{
       const cname=c?.Name||''; const cData=Array.isArray(c?.Data)? c.Data[0] : c?.Data;
       const cand = Array.isArray(cData?.Candidates)? cData.Candidates : [];
@@ -1047,7 +1049,8 @@ async function loadECJAndData(){
 
       detailsByConst[key] = { party:partyKey(winner?.Party), all: sorted };
       cand.forEach(k=>{ const p=partyKey(k.Party); partyTotals[p]=(partyTotals[p]||0)+safeVote(k.Votes); });
-      partySeats[partyKey(winner?.Party)] = (partySeats[partyKey(winner?.Party)]||0)+1;
+      const wParty = partyKey(winner?.Party);
+partySeats[wParty] = (partySeats[wParty] ?? 0) + 1;
 
       const topPct = sorted[0]?.pct||0, runnerPct=sorted[1]?.pct||0;
       closestArr.push({
@@ -1062,6 +1065,7 @@ async function loadECJAndData(){
 
     const {totals: groupedTotals, seats: groupedSeats} = groupSmallParties(partyTotals, partySeats, 0.02, Object.keys(PARTY_COLORS));
 
+    console.log('Seat check:', partySeats);
     buildToplineBar(groupedTotals, groupedSeats);
     buildScoreboard(groupedTotals, groupedSeats);
     buildCharts(groupedTotals, groupedSeats);
@@ -1080,14 +1084,24 @@ async function loadECJAndData(){
   }catch(e){ console.error(e); toast('Partial update — check console.'); }
 }
 function groupSmallParties(totals,seats,threshold=0.02, keep=[]){
-  const total=Object.values(totals).reduce((a,b)=>a+b,0)||1;
-  const T={}, S={};
-  Object.keys(totals).forEach(p=>{
-    const share=(totals[p]/total);
-    const bucket = (!keep.includes(p) && share < threshold) ? 'Other' : p;
-    T[bucket]=(T[bucket]||0)+totals[p];
-    S[bucket]=(S[bucket]||0)+(seats[p]||0);
-  });
+  // Always start with known buckets so 'Other' can’t disappear
+  const baseKeys = Array.from(new Set([...keep, 'Other', 'JLP','PNP','JPP','UIC']));
+  const total = Object.values(totals).reduce((a,b)=>a+b,0) || 1;
+
+  const T = Object.fromEntries(baseKeys.map(k=>[k,0]));
+  const S = Object.fromEntries(baseKeys.map(k=>[k,0]));
+
+  for (const p of Object.keys(totals)){
+    const share = totals[p] / total;
+    const bucket = (!keep.includes(p) && p!=='Other' && share < threshold) ? 'Other' : p;
+    T[bucket] = (T[bucket] || 0) + (totals[p] || 0);
+    S[bucket] = (S[bucket] || 0) + (seats[p]  || 0);
+  }
+
+  // Final safety: ensure 'Other' exists even if zero
+  if (T.Other == null) T.Other = 0;
+  if (S.Other == null) S.Other = 0;
+
   return {totals:T, seats:S};
 }
 
