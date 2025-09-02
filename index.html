@@ -273,6 +273,7 @@ html[data-theme="dark"] .sideitem::before{ opacity:.22; } /* a bit brighter in d
               <option value="120000">2m</option>
               <option value="300000">5m</option>
             </select>
+            <button id="btnForceRefresh" class="btn">Refresh now</button>
           </div>
 
           <!-- Parity pills -->
@@ -426,6 +427,10 @@ const PARTY_SYMBOLS = {
 const CORE_PARTIES = ["JLP","PNP","JPP","UIC"];
 const TICKER_MAX_AGE = 15*60*1000;
 const SIDEBAR_MAX_AGE = 25*60*1000;
+
+  document.getElementById('btnForceRefresh').addEventListener('click', ()=>{
+  loadData();  // force an immediate reload of JSON + redraw
+});
 
 /* ===== Data source URLs (proxy-aware with fallbacks) ===== */
 const PROXY_BASE = 'https://decision2025.odaneforsythe.workers.dev/';
