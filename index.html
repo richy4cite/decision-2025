@@ -350,8 +350,26 @@ const TICKER_MAX_AGE = 15*60*1000;   // <= 15 min
 const SIDEBAR_MAX_AGE = 25*60*1000;  // <= 25 min
 
 /* ===== Parity check config (set your two file paths here) ===== */
-const MAIN_DATA_URL   = 'https://jamaica-elections.com/general/2025/show/jsonapi.php';   // change to your "Main" JSON path
-const BACKUP_DATA_URL = 'https://onedrex.net:9443/election/api/view/constituency-details/v2/carlito2025'; // change to your "Backup" JSON path
+/* ===== Data source URLs (proxy-aware) ===== */
+const PROXY_BASE = 'https://decision2025.odaneforsythe.workers.dev/';
+
+/* Direct endpoints */
+const DIRECT_MAIN   = 'https://jamaica-elections.com/general/2025/show/jsonapi.php';
+const DIRECT_BACKUP = 'https://onedrex.net:9443/election/api/view/constituency-details/v2/carlito2025';
+
+/* Wrap through proxy */
+const PROXY_MAIN   = PROXY_BASE + '?url=' + encodeURIComponent(DIRECT_MAIN);
+const PROXY_BACKUP = PROXY_BASE + '?url=' + encodeURIComponent(DIRECT_BACKUP);
+
+/* Decide when to use proxy vs direct
+   - If hosted on GitHub Pages → use proxy
+   - Else (e.g. local file:// or your own domain) → use direct
+*/
+const isGithubPages = /github\.io$/i.test(location.hostname);
+
+const DATA_URL       = isGithubPages ? PROXY_MAIN   : DIRECT_MAIN;
+const MAIN_DATA_URL  = isGithubPages ? PROXY_MAIN   : DIRECT_MAIN;
+const BACKUP_DATA_URL= isGithubPages ? PROXY_BACKUP : DIRECT_BACKUP;
 const PARITY_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 /* Optional alias (navigation resilience only) */
