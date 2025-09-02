@@ -68,39 +68,90 @@
   .tstats{font-size:.98rem; color:var(--muted)} .tstats b{color:var(--text)}
   .delta{font-weight:800; margin-left:6px} .delta.up{color:#16a34a} .delta.down{color:#ef4444}
 
- /* Page grid: shrink sidebar from 320px → 220px */
+/* === Narrower sidebar (320px → 220px) === */
 .page {
   display:grid;
   grid-template-columns:1fr minmax(0,1600px) 220px 1fr; /* was 320px */
   gap:16px;
 }
+.page > .main { grid-column:2; }
+.page > .rightbar { grid-column:3; }
 
-.page > .main {
-  grid-column:2;
-}
-
-.page > .rightbar {
-  grid-column:3;
-}
-
-/* Sidebar adjustments */
-.rightbar {
+/* === Sidebar container tweaks (light/dark safe via vars) === */
+.rightbar{
   position:sticky;
-  top:92px;
+  top:calc(var(--hdrh) + var(--tabh) + 12px);
   align-self:start;
-  height:calc(100vh - 108px);
+  height:calc(100vh - (var(--hdrh) + var(--tabh) + 28px));
   overflow:auto;
-  background:#ffffff;
+  background:var(--card);
   border:1px solid var(--border);
   border-radius:12px;
-  padding:8px;     /* was 12px, tighter padding */
-  font-size:0.92rem; /* slightly smaller text for compact fit */
+  padding:8px;                 /* tighter than 12px */
+  font-size:0.92rem;
 }
 
-.rightbar h3 {
-  margin:2px 0 8px 0;
-  font-size:0.95rem; /* slightly smaller */
+/* === "Recently Updated" items — compact & readable in 220px === */
+.sideitem{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;                    /* tighter gap */
+  padding:6px 8px;             /* tighter padding */
+  margin:8px 0;
+  font-weight:800;
+  background:var(--card);
+  color:var(--text);
+  border:2px solid var(--border);
+  border-radius:12px;
+  cursor:pointer;
 }
+.sideitem > span:first-child{
+  /* constituency number (left) */
+  font-variant-numeric:tabular-nums;
+  letter-spacing:.2px;
+}
+.sideitem > small:last-child{
+  /* timer (right) */
+  color:var(--muted);
+  font-weight:700;
+  font-size:.88em;
+  font-variant-numeric:tabular-nums;
+}
+
+/* keep the animated ring, but reduce intensity for narrow width */
+.sideitem::before{
+  content:"";
+  position:absolute;
+  inset:-2px;
+  border-radius:14px;
+  padding:2px;
+  background:conic-gradient(from var(--angle,0deg),
+    rgba(22,163,74,.9), rgba(245,158,11,.9), rgba(239,68,68,.9), rgba(22,163,74,.9));
+  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor; mask-composite:exclude;
+  pointer-events:none;
+  opacity:.18;                 /* a touch subtler */
+  animation:spin 12s linear infinite;
+}
+
+/* age-based outline colors (works in light & dark) */
+.age-good{ border-color:var(--good) }
+.age-warn{ border-color:var(--warn) }
+.age-bad { border-color:var(--bad)  }
+
+/* Optional hover feedback (theme-aware) */
+.sideitem:hover{
+  background:color-mix(in oklab, var(--card) 92%, var(--bg));
+  filter:brightness(1.02);
+}
+
+/* Dark mode fine-tuning (keeps contrast crisp) */
+html[data-theme="dark"] .sideitem{
+  background:var(--card);
+  border-color:var(--border);
+}
+html[data-theme="dark"] .sideitem::before{ opacity:.22; } /* a bit brighter in dark */
 
   /* Sections / cards */
   .container{max-width:1600px; margin:14px auto; padding:0 24px}
