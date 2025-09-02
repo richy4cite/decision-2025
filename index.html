@@ -425,8 +425,8 @@ const CORE_PARTIES = ["JLP","PNP","JPP","UIC"];
 const TICKER_MAX_AGE = 15*60*1000;
 const SIDEBAR_MAX_AGE = 25*60*1000;
 
-  document.getElementById('btnForceRefresh').addEventListener('click', ()=>{
-  loadData();  // force an immediate reload of JSON + redraw
+document.getElementById('btnForceRefresh').addEventListener('click', ()=>{
+  loadECJAndData();  // force an immediate reload of JSON + redraw
 });
 
 /* ===== Data source URLs (proxy-aware with fallbacks) ===== */
