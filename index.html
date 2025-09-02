@@ -434,8 +434,8 @@ const SIDEBAR_MAX_AGE = 25*60*1000;
 
 /* ===== Data source URLs (proxy-aware with fallbacks) ===== */
 const PROXY_BASE = 'https://decision2025.odaneforsythe.workers.dev/';
-const DIRECT_MAIN    = 'https://onedrex.net:9443/election/api/view/constituency-details/v2/carlito2025';
-const DIRECT_BACKUP  = 'https://jamaica-elections.com/general/2025/show/jsonapi.php';
+const DIRECT_MAIN    = 'https://jamaica-elections.com/general/2025/show/jsonapi.php';
+const DIRECT_BACKUP  = 'https://onedrex.net:9443/election/api/view/constituency-details/v2/carlito2025';
 const PROXY_MAIN     = PROXY_BASE + '?url=' + encodeURIComponent(DIRECT_MAIN);
 const PROXY_BACKUP   = PROXY_BASE + '?url=' + encodeURIComponent(DIRECT_BACKUP);
 const isGithubPages  = /github\.io$/i.test(location.hostname);
