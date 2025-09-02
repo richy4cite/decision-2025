@@ -528,25 +528,40 @@ function initNationalMap(){
   baseLightNat = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{minZoom:7, maxZoom:15});
   baseDarkNat  = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{minZoom:7, maxZoom:15});
   (document.documentElement.getAttribute('data-theme')==='dark' ? baseDarkNat : baseLightNat).addTo(mapNational);
+mapNational.fitBounds(JAMAICA_BOUNDS_LEAF);
+const zMinNat = mapNational.getBoundsZoom(JAMAICA_BOUNDS_LEAF, true);
+mapNational.setMinZoom(Math.max(0, zMinNat - 1));
+
+document.getElementById('btnResetNational').onclick = ()=>{
   mapNational.fitBounds(JAMAICA_BOUNDS_LEAF);
-  mapNational.setMinZoom(mapNational.getZoom());
-  document.getElementById('btnResetNational').onclick = ()=>{
-    mapNational.fitBounds(JAMAICA_BOUNDS_LEAF);
-    mapNational.setMinZoom(mapNational.getZoom());
-    setTimeout(()=> mapNational.invalidateSize(), 40);
-  };
-}
+  setTimeout(()=> mapNational.invalidateSize(), 40);
+};
 function initInteractiveMap(){
   if (mapInteractive) return;
-  mapInteractive = L.map('imapMap',{zoomControl:true, attributionControl:false, maxBounds:JAMAICA_BOUNDS_LEAF, maxBoundsViscosity:1});
-  baseLightInt = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{minZoom:7, maxZoom:15});
-  baseDarkInt  = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{minZoom:7, maxZoom:15});
+
+  mapInteractive = L.map('imapMap', {
+    zoomControl: true,
+    attributionControl: false,
+    maxBounds: JAMAICA_BOUNDS_LEAF,
+    maxBoundsViscosity: 1
+  });
+
+  // basemaps
+  baseLightInt = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {minZoom: 7, maxZoom: 15});
+  baseDarkInt  = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',  {minZoom: 7, maxZoom: 15});
   (document.documentElement.getAttribute('data-theme')==='dark' ? baseDarkInt : baseLightInt).addTo(mapInteractive);
+
+  // Fit to island
   mapInteractive.fitBounds(JAMAICA_BOUNDS_LEAF);
-  mapInteractive.setMinZoom(mapInteractive.getZoom());
+
+  // ✅ Compute min zoom ONCE from the full-island bounds, give a tiny extra slack
+  const zMin = mapInteractive.getBoundsZoom(JAMAICA_BOUNDS_LEAF, true);
+  mapInteractive.setMinZoom(Math.max(0, zMin - 1));
+
+  // Reset: only fit bounds + invalidate; DO NOT touch minZoom here
   document.getElementById('btnResetInteractive').onclick = ()=>{
     mapInteractive.fitBounds(JAMAICA_BOUNDS_LEAF);
-    mapInteractive.setMinZoom(mapInteractive.getZoom());
+    setTimeout(()=> mapInteractive.invalidateSize(), 40);
     focusedKey = null; pendingFocusName = null;
     const cont = document.getElementById('imapContent');
     cont.textContent = 'Click a constituency to see results here.';
@@ -555,14 +570,15 @@ function initInteractiveMap(){
       geoLayerInteractive.eachLayer(l=>{
         try{ l.closeTooltip(); }catch(_){}
         const nm = l.feature?.properties?.CONST_NAME || '';
-        const key = norm(nm);
+        const key = (nm||'').toLowerCase().replace(/[\s\-\u2013\u2014'’.]/g,'').replace(/&/g,'and');
         const fill = leaderColors[key] || '#e5e7eb';
-        l.setStyle({ fillColor:fill, fillOpacity:0.75, color:'#94a3b8', weight:1 });
+        l.setStyle({ fillColor: fill, fillOpacity: 0.75, color: '#94a3b8', weight: 1 });
         stopPulse(l);
       });
     }
-    setTimeout(()=> mapInteractive.invalidateSize(), 40);
   };
+
+  // Keep size correct when layout changes
   window.addEventListener('resize', ()=> setTimeout(()=> mapInteractive.invalidateSize(), 40));
 }
 function buildLegendInto(containerId){
