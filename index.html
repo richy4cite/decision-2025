@@ -44,11 +44,7 @@
 
   /* Source status pills */
   .status-group{display:flex; align-items:center; gap:12px; margin-left:8px}
-  .status-pill{
-    display:flex; align-items:center; gap:8px;
-    background:var(--card); border:1px solid var(--border); border-radius:999px;
-    padding:6px 10px; font-weight:800; color:var(--text);
-  }
+  .status-pill{display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--border); border-radius:999px; padding:6px 10px; font-weight:800; color:var(--text)}
   .status-pill small{color:var(--muted); font-weight:600}
   .dot{width:10px; height:10px; border-radius:50%; animation:pulse 1.8s infinite; background:#10b981}
   .dot.ok{ background:#10b981 } .dot.warn{ background:#f59e0b } .dot.bad{ background:#ef4444 }
@@ -78,8 +74,7 @@
   .rightbar{position:sticky; top:calc(var(--hdrh) + var(--tabh) + 12px); align-self:start; height:calc(100vh - (var(--hdrh) + var(--tabh) + 28px)); overflow:auto;
     background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px; z-index:1}
   .rightbar h3{margin:2px 0 8px 0; font-size:1rem}
-  .sideitem{position:relative; display:flex; justify-content:space-between; align-items:center;
-    border:2px solid var(--border); border-radius:12px; padding:6px 8px; margin:8px 0; font-weight:800; cursor:pointer; background:var(--card)}
+  .sideitem{position:relative; display:flex; justify-content:space-between; align-items:center; border:2px solid var(--border); border-radius:12px; padding:6px 8px; margin:8px 0; font-weight:800; cursor:pointer; background:var(--card)}
   .sideitem small{color:var(--muted); font-weight:700; font-size:.88em; font-variant-numeric:tabular-nums}
   .sideitem::before{content:""; position:absolute; inset:-2px; border-radius:14px; padding:2px; background:
     conic-gradient(from var(--angle,0deg), rgba(22,163,74,.9), rgba(245,158,11,.9), rgba(239,68,68,.9), rgba(22,163,74,.9));
@@ -117,15 +112,7 @@
 
   /* Rows (5 columns) */
   .rows{margin-top:6px; border-top:1px solid var(--border)}
-  .row{
-    display:grid;
-    grid-template-columns:35px 1fr 40px 70px 52px;
-    gap:12px; padding:10px 4px;
-    align-items:start;
-    border-bottom:1px solid var(--border);
-    min-height:44px;
-    background:var(--card-alt);
-  }
+  .row{display:grid; grid-template-columns:35px 1fr 40px 70px 52px; gap:12px; padding:10px 4px; align-items:start; border-bottom:1px solid var(--border); min-height:44px; background:var(--card-alt)}
   .row:last-child{border-bottom:none}
   .nm{font-weight:700; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-height:1.15}
   .party{ text-align:center; font-weight:800; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:.3px; }
@@ -182,7 +169,7 @@
   .modal{position:fixed; inset:0; background:rgba(15,23,42,.5); display:none; align-items:center; justify-content:center; z-index:2000; backdrop-filter:blur(2px)}
   .modal.show{display:flex}
   .modal-content{
-    width:min(1100px, 66vw);                 /* ~2/3 width */
+    width:min(1100px, 66vw);   /* ~2/3 width */
     max-height:86vh;
     background:var(--card);
     color:var(--text);
@@ -205,13 +192,7 @@
   .close-x{border-radius:10px; padding:6px 10px; background:var(--card); border:1px solid var(--border); cursor:pointer}
 
   /* Preview loading shimmer */
-  .shimmer{
-    position:absolute; inset:0; pointer-events:none;
-    background:linear-gradient(100deg, rgba(0,0,0,0) 0%, rgba(148,163,184,.22) 40%, rgba(0,0,0,0) 80%);
-    background-size:200% 100%;
-    animation:shimmer 1.2s linear infinite;
-    z-index:5;
-  }
+  .shimmer{position:absolute; inset:0; pointer-events:none; background:linear-gradient(100deg, rgba(0,0,0,0) 0%, rgba(148,163,184,.22) 40%, rgba(0,0,0,0) 80%); background-size:200% 100%; animation:shimmer 1.2s linear infinite; z-index:5}
   @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
   /* Ensure Leaflet panes don’t exceed sticky UI */
@@ -402,7 +383,6 @@
 const AUTO_DEFAULT = 60000;
 const ECJ_GEOJSON =
  'https://services6.arcgis.com/3R3y1KXaPJ9BFnsU/arcgis/rest/services/ECJWEB_MAP/FeatureServer/6/query?where=1%3D1&outFields=*&f=geojson';
-const JAMAICA_BOUNDS = L.latLngBounds([17.6, -78.6], [18.6, -76.0]);
 const PARTY_COLORS = { JLP:'#2e8b57', PNP:'#ff8c00', JPP:'#6a0dad', UIC:'#008b8b', Other:'#1e90ff' };
 const PARTY_LOGOS = {
   JLP:"https://www.ecj.com.jm/wp-content/uploads/2025/03/JLP_logo-300x98.png",
@@ -452,7 +432,7 @@ let lastConstHashes = JSON.parse(localStorage.getItem('constituencyHashes')||'{}
 let lastConstUpdated = JSON.parse(localStorage.getItem('constituencyUpdated')||'{}');
 
 /* ===== Preview modal state ===== */
-let previewMap=null, previewLayer=null, previewKey=null, previewPulseTimer=null;
+let previewMap=null, previewLayer=null, previewKey=null;
 
 /* ===== Utils ===== */
 function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),4000); }
@@ -545,7 +525,7 @@ function initNationalMap(){
     mapNational.fitBounds(JAMAICA_BOUNDS_LEAF);
     setTimeout(()=> mapNational.invalidateSize(), 40);
   };
-} // ✅ close initNationalMap here
+}
 
 function initInteractiveMap(){
   if (mapInteractive) return;
@@ -586,41 +566,7 @@ function initInteractiveMap(){
 
   window.addEventListener('resize', ()=> setTimeout(()=> mapInteractive.invalidateSize(), 40));
 }
-  // basemaps
-  baseLightInt = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {minZoom: 7, maxZoom: 15});
-  baseDarkInt  = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',  {minZoom: 7, maxZoom: 15});
-  (document.documentElement.getAttribute('data-theme')==='dark' ? baseDarkInt : baseLightInt).addTo(mapInteractive);
 
-  // Fit to island
-  mapInteractive.fitBounds(JAMAICA_BOUNDS_LEAF);
-
-  // ✅ Compute min zoom ONCE from the full-island bounds, give a tiny extra slack
-  const zMin = mapInteractive.getBoundsZoom(JAMAICA_BOUNDS_LEAF, true);
-  mapInteractive.setMinZoom(Math.max(0, zMin - 1));
-
-  // Reset: only fit bounds + invalidate; DO NOT touch minZoom here
-  document.getElementById('btnResetInteractive').onclick = ()=>{
-    mapInteractive.fitBounds(JAMAICA_BOUNDS_LEAF);
-    setTimeout(()=> mapInteractive.invalidateSize(), 40);
-    focusedKey = null; pendingFocusName = null;
-    const cont = document.getElementById('imapContent');
-    cont.textContent = 'Click a constituency to see results here.';
-    cont.dataset.currentKey = '';
-    if (geoLayerInteractive){
-      geoLayerInteractive.eachLayer(l=>{
-        try{ l.closeTooltip(); }catch(_){}
-        const nm = l.feature?.properties?.CONST_NAME || '';
-        const key = (nm||'').toLowerCase().replace(/[\s\-\u2013\u2014'’.]/g,'').replace(/&/g,'and');
-        const fill = leaderColors[key] || '#e5e7eb';
-        l.setStyle({ fillColor: fill, fillOpacity: 0.75, color: '#94a3b8', weight: 1 });
-        stopPulse(l);
-      });
-    }
-  };
-
-  // Keep size correct when layout changes
-  window.addEventListener('resize', ()=> setTimeout(()=> mapInteractive.invalidateSize(), 40));
-}
 function buildLegendInto(containerId){
   const host=document.getElementById(containerId); if(!host) return;
   host.innerHTML='';
@@ -766,7 +712,7 @@ function updateFocusOutline(){
     const key = norm(nm);
     const fill = leaderColors[key] || '#e5e7eb';
     const isFocused = focusedKey && focusedKey===key;
-    l.setStyle({ fillColor: fill, fillOpacity:0.75, color: isFocused? '#111827':'#94a3b8', weight: isFocused? 3:1 });
+    l.setStyle({ fillColor: fill, fillOpacity: isFocused?0.9:0.75, color: isFocused? '#111827':'#94a3b8', weight: isFocused? 3:1 });
     if (isFocused){ try{ l.bringToFront(); }catch(_){}
       startPulse(l);
     } else {
@@ -1143,7 +1089,7 @@ async function loadECJAndData(){
       const safeVote = (x)=> Number(x)||0;
       const winner = cand.reduce((m,x)=> safeVote(x.Votes)>safeVote(m.Votes)? x : m, cand[0]);
       const sorted = cand.slice().sort((a,b)=> safePct(b.Percentage)-safePct(a.Percentage)).map(k=>({
-        name:`${(k["First Name"]||'').trim()} ${(k["Last Name"]||'').trim()}`.trim(),
+        name:`${(k["First Name"]||'").trim()} ${(k["Last Name"]||'').trim()}`.trim(),
         party:partyKey(k.Party),
         votes:safeVote(k.Votes),
         pct:safePct(k.Percentage)
@@ -1387,13 +1333,14 @@ function focusConstituencyByName(nameOrKey, isKey=false){
 /* ===== Preview modal logic ===== */
 function initPreviewMap(){
   if (previewMap) return;
-  previewMap = L.map('previewMap', { zoomControl:true, attributionControl:false, maxBounds:JAMAICA_BOUNDS, maxBoundsViscosity:1 });
+  // Note: use slightly relaxed bounds (no minZoom lock) so preview is comfy
+  previewMap = L.map('previewMap', { zoomControl:true, attributionControl:false, maxBounds:JAMAICA_BOUNDS_LEAF, maxBoundsViscosity:1 });
   const isDark = document.documentElement.getAttribute('data-theme')==='dark';
   const base = L.tileLayer(isDark
     ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
     : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
     {minZoom:7, maxZoom:15}).addTo(previewMap);
-  previewMap.fitBounds(JAMAICA_BOUNDS);
+  previewMap.fitBounds(JAMAICA_BOUNDS_LEAF);
   previewMap.setMinZoom(previewMap.getZoom());
 }
 function closePreview(){
@@ -1401,10 +1348,7 @@ function closePreview(){
   modal.classList.remove('show');
   document.body.classList.remove('modal-open');
   if (previewLayer){
-    try{
-      previewLayer.eachLayer(stopPulse);
-      previewLayer.remove();
-    }catch(_){}
+    try{ previewLayer.eachLayer(stopPulse); previewLayer.remove(); }catch(_){}
     previewLayer=null;
   }
   const shim = document.getElementById('previewShimmer');
