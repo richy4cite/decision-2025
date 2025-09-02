@@ -114,7 +114,6 @@
   }
   .row:last-child{border-bottom:none}
 
-  /* Candidate name: allow up to 2 lines */
   .nm{
     font-weight:700;
     display:-webkit-box;
@@ -167,7 +166,6 @@
 
   .hidden{display:none !important}
 
-  /* tiny toast */
   .toast{position:fixed; right:12px; bottom:72px; background:#111827; color:#fff; padding:10px 12px; border-radius:10px; box-shadow:var(--shadow); z-index:1000; font-weight:700}
 </style>
 </head>
@@ -337,34 +335,38 @@ const PARTY_SYMBOLS = {
   Other:"https://static.vecteezy.com/system/resources/thumbnails/012/025/259/small_2x/jamaica-flag-with-grunge-texture-png.png"
 };
 const CORE_PARTIES = ["JLP","PNP","JPP","UIC"];
-const TICKER_MAX_AGE = 15*60*1000;   // <= 15 min
-const SIDEBAR_MAX_AGE = 25*60*1000;  // <= 25 min
+const TICKER_MAX_AGE = 15*60*1000;
+const SIDEBAR_MAX_AGE = 25*60*1000;
 
 /* ===== Data source URLs (proxy-aware with fallbacks) ===== */
 const PROXY_BASE = 'https://decision2025.odaneforsythe.workers.dev/';
-
 const DIRECT_MAIN    = 'https://jamaica-elections.com/general/2025/show/jsonapi.php';
 const DIRECT_BACKUP  = 'https://onedrex.net:9443/election/api/view/constituency-details/v2/carlito2025';
-
 const PROXY_MAIN     = PROXY_BASE + '?url=' + encodeURIComponent(DIRECT_MAIN);
 const PROXY_BACKUP   = PROXY_BASE + '?url=' + encodeURIComponent(DIRECT_BACKUP);
+const isGithubPages  = /github\.io$/i.test(location.hostname);
+const MAIN_URLS      = isGithubPages ? [PROXY_MAIN, DIRECT_MAIN] : [DIRECT_MAIN, PROXY_MAIN];
+const BACKUP_URLS    = isGithubPages ? [PROXY_BACKUP, DIRECT_BACKUP] : [DIRECT_BACKUP, PROXY_BACKUP];
+let DATA_URL         = MAIN_URLS[0];   // will be updated to first working URL by parity check
+const PARITY_INTERVAL_MS = 5 * 60 * 1000;
 
-/* Decide when to prefer proxy (GitHub Pages) */
-const isGithubPages = /github\.io$/i.test(location.hostname);
+/* ===== Normalizer + Name Aliases with metadata ===== */
+function norm(s){
+  return String(s||'').toLowerCase()
+    .replace(/[\s\-\u2013\u2014'’.]/g,'')
+    .replace(/&/g,'and');
+}
 
-/* Try URLs in order until one works. We’ll try BOTH proxy and direct regardless of host,
-   because sometimes the proxy can’t reach a custom port, or the origin blocks cross-origin. */
-const MAIN_URLS   = isGithubPages ? [PROXY_MAIN, DIRECT_MAIN]   : [DIRECT_MAIN, PROXY_MAIN];
-const BACKUP_URLS = isGithubPages ? [PROXY_BACKUP, DIRECT_BACKUP] : [DIRECT_BACKUP, PROXY_BACKUP];
-
-/* Primary data feed used by the app (first that succeeds from MAIN_URLS) */
-let DATA_URL = MAIN_URLS[0];  // will be updated to the first working URL on first load
-const PARITY_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
-
-/* Optional alias (navigation resilience only) */
-const ALIASES = {
-  [norm('Kingston Eastern and Port Royal')]: norm('Kingston East and Port Royal')
+/* Canonical link: "Kingston East and Port Royal" -> "Kingston Eastern and Port Royal"
+   and force Parish=Kingston, Const #=3 */
+const NAME_ALIASES = {
+  [norm('Kingston East and Port Royal')]: {
+    key: norm('Kingston Eastern and Port Royal'),
+    parish: 'Kingston',
+    constno: '3'
+  }
 };
+function canonKey(k){ return NAME_ALIASES[k]?.key || k; }
 
 /* ===== State ===== */
 let voteChart=null, seatChart=null, refreshTimer=null, timerInterval=null;
@@ -376,16 +378,11 @@ let lastConstHashes = JSON.parse(localStorage.getItem('constituencyHashes')||'{}
 let lastConstUpdated = JSON.parse(localStorage.getItem('constituencyUpdated')||'{}');
 
 /* ===== Utils ===== */
-function norm(s){ return String(s||'').toLowerCase().replace(/[\s\-\u2013\u2014'’.]/g,'').replace(/&/g,'and'); }
 function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),4000); }
 function contrastText(hex){ try{ const c=hex.replace('#',''); const r=parseInt(c.slice(0,2),16),g=parseInt(c.slice(2,4),16),b=parseInt(c.slice(4,6),16); return ((r*299+g*587+b*114)/1000>=140)?'#0b1220':'#ffffff'; }catch{ return '#0b1220'; } }
 function fmtHHMMSS(ms){ const s=Math.max(0,Math.floor(ms/1000)); const hh=String(Math.floor(s/3600)).padStart(2,'0'); const mm=String(Math.floor((s%3600)/60)).padStart(2,'0'); const ss=String(s%60).padStart(2,'0'); return `${hh}:${mm}:${ss}`; }
 function makeHash(cands){ return cands.map(k=>`${(k.Party||'Other').toUpperCase()}|${(k["First Name"]||'').trim()} ${(k["Last Name"]||'').trim()}|${Number(k.Votes||0)}`).join(';'); }
-const partyKey = p => {
-  const P = String(p||'Other').toUpperCase();
-  if (P.startsWith('INDA') || P.startsWith('INDB')) return 'Other';
-  return ['JLP','PNP','JPP','UIC'].includes(P) ? P : 'Other';
-};
+const partyKey = p => { const P = String(p||'Other').toUpperCase(); if (P.startsWith('INDA') || P.startsWith('INDB')) return 'Other'; return ['JLP','PNP','JPP','UIC'].includes(P) ? P : 'Other'; };
 const bust = url => url + (url.includes('?') ? '&' : '?') + 'ts=' + Date.now();
 
 /* ===== Tabs ===== */
@@ -397,7 +394,7 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
   if (t.dataset.tab==='national' && mapNational) setTimeout(()=>mapNational.invalidateSize(), 60);
   if (t.dataset.tab==='interactive' && mapInteractive) {
     setTimeout(()=>mapInteractive.invalidateSize(), 60);
-    if (pendingFocusName){ focusConstituencyByName(pendingFocusName); pendingFocusName=null; }
+    if (pendingFocusName){ focusConstituencyByName(pendingFocusName, true); pendingFocusName=null; }
     else {
       const cur = document.getElementById('imapContent')?.dataset?.currentKey;
       if (cur) focusConstituencyByName(cur, true);
@@ -474,6 +471,14 @@ async function loadECJBoundaries(){
     if (parish) (byParish[parish] ||= []);
     constNameToNo[key]=(cno||'').toString();
     constNameToParish[key]=parish||'';
+  });
+
+  /* Force alias corrections from metadata (Parish & Const #) */
+  Object.values(NAME_ALIASES).forEach(a=>{
+    if (a.key){
+      constNameToParish[a.key] = a.parish || constNameToParish[a.key] || '';
+      constNameToNo[a.key]     = a.constno || constNameToNo[a.key] || '';
+    }
   });
 }
 
@@ -667,7 +672,7 @@ function renderParishBlocks(detailsByConst, rawData){
   const allKeys = Object.keys(detailsByConst);
   const parishOf = k => constNameToParish[k] || '';
   const cnoOf    = k => (constNameToNo[k] || '');
-  const recOf    = k => Object.values(rawData).find(x=> norm(x?.Name)===k);
+  const recOf    = k => Object.values(rawData).find(x=> canonKey(norm(x?.Name))===k);
   const nameOf   = k => (recOf(k)?.Name || k);
   const leadPartyOf = k => detailsByConst[k]?.all?.[0]?.party || 'Other';
 
@@ -803,7 +808,7 @@ function renderParishBlocks(detailsByConst, rawData){
     if (grid.children.length) document.getElementById('parishContainer').appendChild(wrap);
   });
 
-  // Simple text search across blocks
+  // Text search across blocks
   const sb = document.getElementById('searchBar');
   function applyTextFilter(){
     const q = sb.value.trim().toLowerCase();
@@ -840,7 +845,7 @@ function tickTimersAndRecent(){
   Object.keys(lastConstUpdated).forEach(k=>{
     const ts = lastConstUpdated[k];
     const age = Date.now()-ts;
-    const name = Object.values(window.__rawData||{}).find(x=> norm(x?.Name)===k)?.Name || k;
+    const name = Object.values(window.__rawData||{}).find(x=> canonKey(norm(x?.Name))===k)?.Name || k;
     const num = constNameToNo[k] || '';
     if (ts && age <= SIDEBAR_MAX_AGE) recents.push({k, name, num, ts, age});
     if (ts && age <= TICKER_MAX_AGE)  ticker.push({k, name, num, ts, age});
@@ -870,7 +875,6 @@ function tickTimersAndRecent(){
     tick.textContent = '— No constituency updated in the last 15 minutes —';
   }
 
-  // Keep the timer on the interactive details panel fresh
   const imTimer = document.querySelector('#imapContent .updated span[style*="font-variant-numeric"]');
   const imDot   = document.querySelector('#imapContent .updated .pulse');
   const curKey = document.getElementById('imapContent')?.dataset?.currentKey;
@@ -884,6 +888,34 @@ function tickTimersAndRecent(){
   }
 }
 
+/* ===== Robust fetch helpers (with fallbacks) ===== */
+async function fetchOne(url){
+  try{
+    const r = await fetch(bust(url), {cache:'no-store'});
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const ct = r.headers.get('content-type') || '';
+    if (!/json/i.test(ct)) {
+      try { return await r.json(); } 
+      catch { throw new Error(`Non-JSON content-type: ${ct}`); }
+    }
+    return await r.json();
+  }catch(e){
+    throw new Error(`${url} → ${e.message}`);
+  }
+}
+async function fetchWithFallback(urlList){
+  const errors = [];
+  for (const u of urlList){
+    try{
+      const data = await fetchOne(u);
+      return { data, ok:true, used:u };
+    }catch(e){
+      errors.push(e.message);
+    }
+  }
+  return { ok:false, errors };
+}
+
 /* ===== Data load ===== */
 async function loadData(){
   try{
@@ -891,10 +923,12 @@ async function loadData(){
     initNationalMap(); initInteractiveMap();
     buildLegendInto('mapLegend'); buildLegendInto('imapLegend');
 
-    // Fetch primary election data (proxy-aware)
-    const data = await fetch(bust(DATA_URL), {cache:'no-store'})
-      .then(r=>{ if(!r.ok) throw new Error('Data HTTP '+r.status); return r.json(); });
+    // Ensure DATA_URL is a working MAIN endpoint, if possible
+    const probe = await fetchWithFallback(MAIN_URLS);
+    if (probe.ok) DATA_URL = probe.used;
 
+    // Fetch primary election data
+    const data = await fetchOne(DATA_URL);
     window.__rawData = data;
 
     if (!geoLayerNational){
@@ -909,7 +943,17 @@ async function loadData(){
       const cname=c?.Name||''; const cData=Array.isArray(c?.Data)? c.Data[0] : c?.Data;
       const cand = Array.isArray(cData?.Candidates)? cData.Candidates : [];
       if(!cname || !cand.length) return;
-      const key = norm(cname);
+      let key = norm(cname);
+      const alias = NAME_ALIASES[key];
+      if (alias){
+        key = alias.key;                      // canonical key
+        // force parish and constituency number from alias
+        constNameToParish[key] = alias.parish || constNameToParish[key] || '';
+        constNameToNo[key]     = alias.constno || constNameToNo[key] || '';
+      }else{
+        key = canonKey(key);
+      }
+
       const safePct  = (x)=> Number(x)||0;
       const safeVote = (x)=> Number(x)||0;
       const winner = cand.reduce((m,x)=> safeVote(x.Votes)>safeVote(m.Votes)? x : m, cand[0]);
@@ -920,9 +964,6 @@ async function loadData(){
         pct:safePct(k.Percentage)
       }));
 
-      const byP = Object.fromEntries(sorted.map(x=>[x.party,x]));
-      const top2 = (byP.JLP || sorted[0]) ? [byP.JLP || sorted[0], byP.PNP || sorted.find(x=>x!== (byP.JLP||sorted[0])) || sorted[1] || (byP.JLP||sorted[0])] : sorted.slice(0,2);
-
       const sig = makeHash(cand);
       if (lastConstHashes[key] !== sig){
         lastConstHashes[key] = sig;
@@ -931,7 +972,7 @@ async function loadData(){
         localStorage.setItem('constituencyUpdated', JSON.stringify(lastConstUpdated));
       }
 
-      detailsByConst[key] = { party:partyKey(winner?.Party), all: sorted, top2 };
+      detailsByConst[key] = { party:partyKey(winner?.Party), all: sorted };
       cand.forEach(k=>{ const p=partyKey(k.Party); partyTotals[p]=(partyTotals[p]||0)+safeVote(k.Votes); });
       partySeats[partyKey(winner?.Party)] = (partySeats[partyKey(winner?.Party)]||0)+1;
 
@@ -977,31 +1018,48 @@ function groupSmallParties(totals,seats,threshold=0.02, keep=[]){
   return {totals:T, seats:S};
 }
 
-/* ===== Parity check (Main vs Backup) — using BOXES COUNTED ===== */
-async function fetchJsonSafe(url){
-  try{
-    const r = await fetch(bust(url), {cache:'no-store'});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    return await r.json();
-  }catch(e){ return {__error: e.message || 'fetch-error'}; }
-}
+/* ===== Parity check (using Boxes Counted) ===== */
 function buildCountMap(dataset){
-  // Map of constituency -> counted boxes (number from "X of Y")
   const out = {};
-  if (!dataset || dataset.__error) return out;
-  Object.values(dataset).forEach(c=>{
-    const cname = c?.Name || '';
-    if (!cname) return;
-    const key = norm(cname);
-    const d = Array.isArray(c?.Data) ? c.Data[0] : (c?.Data||{});
+  if (!dataset) return out;
+  const items = Array.isArray(dataset) ? dataset : Object.values(dataset);
+  items.forEach(c => {
+    const name = c?.Name || c?.name || c?.constituency || c?.constituency_name || c?.Constituency || '';
+    if (!name) return;
+    let key = norm(name);
+    const alias = NAME_ALIASES[key];
+    key = alias?.key || key;
+
+    const d = Array.isArray(c?.Data) ? c.Data[0] : (c?.Data || c || {});
     let counted = 0;
-    if (d && typeof d["Boxes Counted"] === "string") {
+    if (typeof d["Boxes Counted"] === 'string'){
       const m = d["Boxes Counted"].match(/(\d+)\s*of\s*(\d+)/i);
       if (m) counted = Number(m[1]);
     }
+    const numericCounted = d.counted_boxes ?? d.boxes_counted ?? d.boxesCounted ?? d.counted ?? null;
+    if (numericCounted != null && !isNaN(Number(numericCounted))) counted = Number(numericCounted);
     out[key] = counted;
   });
   return out;
+}
+function setPillState(which, state, tooltip, subtext){
+  const pill = document.getElementById(which==='main' ? 'pillMain' : 'pillBackup');
+  const dot  = pill?.querySelector('.dot');
+  const txt  = document.getElementById(which==='main' ? 'mainLag' : 'backupLag');
+  if (!pill || !dot || !txt) return;
+  dot.classList.remove('ok','warn','bad');
+  dot.classList.add(state);
+  pill.title = tooltip || '';
+  txt.textContent = subtext || (state==='ok' ? 'OK' : state==='warn' ? 'Check' : 'Offline');
+}
+function formatDiffTooltip(diffs, maxItems=6){
+  if (!diffs.length) return 'OK';
+  const head = `${diffs.length} constituency${diffs.length>1?'ies':''} differ (Boxes Counted)`;
+  const lines = diffs.slice(0,maxItems).map(d=>{
+    const nm = Object.values(window.__rawData||{}).find(x=> canonKey(norm(x?.Name))===d.key)?.Name || d.key;
+    return `• ${nm}: Main ${d.main.toLocaleString()} vs Backup ${d.backup.toLocaleString()}`;
+  });
+  return [head, ...lines].join('\n');
 }
 function summarizeParity(mainMap, backupMap){
   const keys = new Set([...Object.keys(mainMap), ...Object.keys(backupMap)]);
@@ -1018,77 +1076,59 @@ function summarizeParity(mainMap, backupMap){
   });
   return { diffs, mainBehind, backupBehind };
 }
-function setPillState(which, state, tooltip, subtext){
-  const pill = document.getElementById(which==='main' ? 'pillMain' : 'pillBackup');
-  const dot  = pill?.querySelector('.dot');
-  const txt  = document.getElementById(which==='main' ? 'mainLag' : 'backupLag');
-  if (!pill || !dot || !txt) return;
-  dot.classList.remove('ok','warn','bad');
-  dot.classList.add(state);
-  pill.title = tooltip || '';
-  txt.textContent = subtext || (state==='ok' ? 'OK' : state==='warn' ? 'Check' : 'Offline');
-}
-function formatDiffTooltip(diffs, maxItems=6){
-  if (!diffs.length) return 'OK';
-  const head = `${diffs.length} constituency${diffs.length>1?'ies':''} differ (Boxes Counted)`;
-  const lines = diffs.slice(0,maxItems).map(d=>{
-    const nm = Object.values(window.__rawData||{}).find(x=> norm(x?.Name)===d.key)?.Name || d.key;
-    return `• ${nm}: Main ${d.main.toLocaleString()} vs Backup ${d.backup.toLocaleString()}`;
-  });
-  return [head, ...lines].join('\n');
-}
 async function runParityCheck(){
-  const [mainData, backupData] = await Promise.all([
-    fetchJsonSafe(MAIN_DATA_URL),
-    fetchJsonSafe(BACKUP_DATA_URL)
-  ]);
+  const mRes = await fetchWithFallback(MAIN_URLS);
+  if (mRes.ok && DATA_URL !== mRes.used) DATA_URL = mRes.used;
+  const bRes = await fetchWithFallback(BACKUP_URLS);
 
-  const mainErr = !!mainData.__error;
-  const backErr = !!backupData.__error;
-
-  if (mainErr && backErr){
-    setPillState('main',   'bad',  'Main unreachable',   'Offline');
-    setPillState('backup', 'bad',  'Backup unreachable', 'Offline');
+  if (!mRes.ok && !bRes.ok){
+    setPillState('main',   'bad',  'Main unreachable:\n'   + mRes.errors.join('\n'), 'Offline');
+    setPillState('backup', 'bad',  'Backup unreachable:\n' + bRes.errors.join('\n'), 'Offline');
     return;
   }
-  if (mainErr){
-    setPillState('main',   'bad',  'Main unreachable',   'Offline');
-    setPillState('backup', 'warn', 'Main unreachable (comparing unavailable)', 'OK');
+  if (!mRes.ok){
+    setPillState('main',   'bad',  'Main unreachable:\n' + mRes.errors.join('\n'), 'Offline');
+    if (bRes.ok){
+      setPillState('backup', 'warn', 'Main unreachable; comparison unavailable.\nBackup OK via:\n' + bRes.used, 'OK');
+    } else {
+      setPillState('backup', 'bad',  'Backup unreachable:\n' + bRes.errors.join('\n'), 'Offline');
+    }
     return;
   }
-  if (backErr){
-    setPillState('backup', 'bad',  'Backup unreachable', 'Offline');
-    setPillState('main',   'warn', 'Backup unreachable (comparing unavailable)', 'OK');
+  if (!bRes.ok){
+    setPillState('backup', 'bad',  'Backup unreachable:\n' + bRes.errors.join('\n'), 'Offline');
+    setPillState('main',   'warn', 'Backup unreachable; comparison unavailable.\nMain OK via:\n' + mRes.used, 'OK');
     return;
   }
 
-  const mainMap   = buildCountMap(mainData);
-  const backupMap = buildCountMap(backupData);
+  const mainMap   = buildCountMap(mRes.data);
+  const backupMap = buildCountMap(bRes.data);
   const { diffs, mainBehind, backupBehind } = summarizeParity(mainMap, backupMap);
 
   if (!diffs.length){
-    setPillState('main',   'ok',   'Main matches Backup across all constituencies (Boxes Counted)',   'OK');
-    setPillState('backup', 'ok',   'Backup matches Main across all constituencies (Boxes Counted)',   'OK');
+    setPillState('main',   'ok',   'Main matches Backup (Boxes Counted)\nVia:\n' + mRes.used, 'OK');
+    setPillState('backup', 'ok',   'Backup matches Main (Boxes Counted)\nVia:\n' + bRes.used, 'OK');
     return;
   }
 
   const tip = formatDiffTooltip(diffs);
   if (mainBehind > backupBehind){
-    setPillState('main',   'warn', tip + '\n(Main appears behind)',   'Behind');
-    setPillState('backup', 'warn', tip + '\n(Main appears behind)',   'Ahead');
+    setPillState('main',   'warn', tip + '\n(Main appears behind)\nVia:\n' + mRes.used,   'Behind');
+    setPillState('backup', 'warn', tip + '\n(Main appears ahead)\nVia:\n' + bRes.used,   'Ahead');
   }else if (backupBehind > mainBehind){
-    setPillState('backup', 'warn', tip + '\n(Backup appears behind)', 'Behind');
-    setPillState('main',   'warn', tip + '\n(Backup appears behind)', 'Ahead');
+    setPillState('backup', 'warn', tip + '\n(Backup appears behind)\nVia:\n' + bRes.used, 'Behind');
+    setPillState('main',   'warn', tip + '\n(Backup appears behind)\nVia:\n' + mRes.used, 'Ahead');
   }else{
-    setPillState('main',   'warn', tip + '\n(Mixed differences)',   'Check');
-    setPillState('backup', 'warn', tip + '\n(Mixed differences)',   'Check');
+    setPillState('main',   'warn', tip + '\n(Mixed differences)\nVia:\n' + mRes.used,   'Check');
+    setPillState('backup', 'warn', tip + '\n(Mixed differences)\nVia:\n' + bRes.used,   'Check');
   }
 }
 
 /* ===== Deep link + handshake ===== */
 function gotoInteractive(name){
-  const k = norm(name);
-  const resolved = ALIASES[k] || k;
+  let k = norm(name);
+  const alias = NAME_ALIASES[k];
+  const resolved = alias?.key || k;
   document.querySelectorAll('section[id^="tab-"]').forEach(s=>s.classList.add('hidden'));
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   document.querySelector('.tab[data-tab="interactive"]').classList.add('active');
@@ -1132,7 +1172,8 @@ function focusConstituencyByNumber(no){
 function focusConstituencyByName(nameOrKey, isKey=false){
   if (!geoLayerInteractive) return;
   const rawK = isKey ? nameOrKey : norm(nameOrKey);
-  const keyWanted = ALIASES[rawK] || rawK;
+  const alias = NAME_ALIASES[rawK];
+  const keyWanted = alias?.key || rawK;
 
   let target=null, parish=null, display=null;
   geoLayerInteractive.eachLayer(L=>{
@@ -1149,7 +1190,7 @@ function focusConstituencyByName(nameOrKey, isKey=false){
     setTimeout(()=> target.openTooltip(), 250);
     showConstituencyDetails(keyWanted, display||nameOrKey);
   } else {
-    const number = constNameToNo[keyWanted] || constNameToNo[ALIASES[keyWanted]||''];
+    const number = constNameToNo[keyWanted] || constNameToNo[alias?.key || ''];
     if (number && focusConstituencyByNumber(number)) return;
     setTimeout(()=> focusConstituencyByName(nameOrKey, isKey), 150);
   }
