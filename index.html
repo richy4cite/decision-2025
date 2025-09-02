@@ -68,30 +68,27 @@
   .tstats{font-size:.98rem; color:var(--muted)} .tstats b{color:var(--text)}
   .delta{font-weight:800; margin-left:6px} .delta.up{color:#16a34a} .delta.down{color:#ef4444}
 
-/* === Narrower sidebar (320px → 220px) === */
-.page {
-  display:grid;
-  grid-template-columns:1fr minmax(0,1600px) 260px 1fr; /* was 320px */
-  gap:16px;
-}
-.page > .main { grid-column:2; }
-.page > .rightbar { grid-column:3; }
+/* Page grid */
+  .page{display:grid; grid-template-columns:1fr minmax(0,1600px) 320px 1fr; gap:16px}
+  .page > .main{grid-column:2}
+  .page > .rightbar{grid-column:3}
+  @media (max-width:1300px){ .page{display:block} .rightbar{position:relative; width:auto; max-width:none} }
 
-/* === Sidebar container tweaks (light/dark safe via vars) === */
-.rightbar{
-  position:sticky;
-  top:calc(var(--hdrh) + var(--tabh) + 12px);
-  align-self:start;
-  height:calc(100vh - (var(--hdrh) + var(--tabh) + 28px));
-  overflow:auto;
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:8px;                 /* tighter than 12px */
-  font-size:0.92rem;
-}
-
-/* === "Recently Updated" items — compact & readable in 220px === */
+  /* Sidebar */
+  .rightbar{position:sticky; top:calc(var(--hdrh) + var(--tabh) + 12px); align-self:start; height:calc(100vh - (var(--hdrh) + var(--tabh) + 28px)); overflow:auto;
+    background:var(--card); border:1px solid var(--border); border-radius:12px; padding:12px}
+  .rightbar h3{margin:2px 0 8px 0; font-size:1rem}
+  .sideitem{position:relative; display:flex; justify-content:space-between; align-items:center;
+    border:2px solid var(--border); border-radius:12px; padding:8px 10px; margin:8px 0; font-weight:800; cursor:pointer; background:var(--card)}
+  .sideitem small{color:var(--muted)}
+  .sideitem::before{content:""; position:absolute; inset:-2px; border-radius:14px; padding:2px; background:
+    conic-gradient(from var(--angle,0deg), rgba(22,163,74,.9), rgba(245,158,11,.9), rgba(239,68,68,.9), rgba(22,163,74,.9));
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; opacity:.2; animation:spin 12s linear infinite}
+  @keyframes spin{to{--angle:360deg}}
+  .age-good{border-color:var(--good)} .age-warn{border-color:var(--warn)} .age-bad{border-color:var(--bad)}
+  
+  /* === "Recently Updated" items — compact & readable in 220px === */
 .sideitem{
   display:flex;
   justify-content:space-between;
