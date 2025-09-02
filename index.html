@@ -340,16 +340,25 @@ const CORE_PARTIES = ["JLP","PNP","JPP","UIC"];
 const TICKER_MAX_AGE = 15*60*1000;   // <= 15 min
 const SIDEBAR_MAX_AGE = 25*60*1000;  // <= 25 min
 
-/* ===== Data source URLs (proxy-aware) ===== */
+/* ===== Data source URLs (proxy-aware with fallbacks) ===== */
 const PROXY_BASE = 'https://decision2025.odaneforsythe.workers.dev/';
-const DIRECT_MAIN   = 'https://jamaica-elections.com/general/2025/show/jsonapi.php';
-const DIRECT_BACKUP = 'https://onedrex.net:9443/election/api/view/constituency-details/v2/carlito2025';
-const PROXY_MAIN   = PROXY_BASE + '?url=' + encodeURIComponent(DIRECT_MAIN);
-const PROXY_BACKUP = PROXY_BASE + '?url=' + encodeURIComponent(DIRECT_BACKUP);
+
+const DIRECT_MAIN    = 'https://jamaica-elections.com/general/2025/show/jsonapi.php';
+const DIRECT_BACKUP  = 'https://onedrex.net:9443/election/api/view/constituency-details/v2/carlito2025';
+
+const PROXY_MAIN     = PROXY_BASE + '?url=' + encodeURIComponent(DIRECT_MAIN);
+const PROXY_BACKUP   = PROXY_BASE + '?url=' + encodeURIComponent(DIRECT_BACKUP);
+
+/* Decide when to prefer proxy (GitHub Pages) */
 const isGithubPages = /github\.io$/i.test(location.hostname);
-const DATA_URL        = isGithubPages ? PROXY_MAIN   : DIRECT_MAIN;   // primary data feed
-const MAIN_DATA_URL   = isGithubPages ? PROXY_MAIN   : DIRECT_MAIN;   // parity: main
-const BACKUP_DATA_URL = isGithubPages ? PROXY_BACKUP : DIRECT_BACKUP; // parity: backup
+
+/* Try URLs in order until one works. We’ll try BOTH proxy and direct regardless of host,
+   because sometimes the proxy can’t reach a custom port, or the origin blocks cross-origin. */
+const MAIN_URLS   = isGithubPages ? [PROXY_MAIN, DIRECT_MAIN]   : [DIRECT_MAIN, PROXY_MAIN];
+const BACKUP_URLS = isGithubPages ? [PROXY_BACKUP, DIRECT_BACKUP] : [DIRECT_BACKUP, PROXY_BACKUP];
+
+/* Primary data feed used by the app (first that succeeds from MAIN_URLS) */
+let DATA_URL = MAIN_URLS[0];  // will be updated to the first working URL on first load
 const PARITY_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 /* Optional alias (navigation resilience only) */
