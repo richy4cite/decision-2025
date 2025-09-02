@@ -18,7 +18,7 @@
   *{box-sizing:border-box}
   body{margin:0; background:var(--bg); color:var(--text); font-family:Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
 
-  /* Header — cleaner CBS-like */
+  /* Header */
   .header{position:sticky; top:0; z-index:60; background:#ffffff; border-bottom:1px solid var(--border)}
   .header-inner{max-width:1800px; margin:0 auto; padding:14px 24px; display:flex; align-items:center; gap:18px; flex-wrap:wrap}
   .brand{font-weight:800; font-size:1.25rem; letter-spacing:.2px}
@@ -28,7 +28,7 @@
   .refresh{display:flex; align-items:center; gap:6px}
   select{border:1px solid var(--border); border-radius:10px; padding:8px 10px; background:#fff; color:#111827}
 
-  /* ==== Data source status pills (Main vs Backup) ==== */
+  /* Source status pills (Main vs Backup) */
   .status-group{display:flex; align-items:center; gap:12px; margin-left:8px}
   .status-pill{
     display:flex; align-items:center; gap:8px;
@@ -36,22 +36,18 @@
     padding:6px 10px; font-weight:800; color:#111827;
   }
   .status-pill small{color:var(--muted); font-weight:600}
-  .dot{
-    width:10px; height:10px; border-radius:50%;
-    animation:pulse 1.8s infinite;
-    background:#10b981; /* default green */
-  }
+  .dot{width:10px; height:10px; border-radius:50%; animation:pulse 1.8s infinite; background:#10b981}
   .dot.ok{ background:#10b981 }     /* green */
   .dot.warn{ background:#f59e0b }   /* orange */
   .dot.bad{ background:#ef4444 }    /* red */
 
-  /* Tabs — understated underline nav */
+  /* Tabs */
   .tabs{background:#f7f8fb; border-bottom:1px solid var(--border)}
   .tabs-inner{max-width:1800px; margin:0 auto; padding:0 24px; display:flex; gap:24px}
   .tab{padding:14px 2px; cursor:pointer; border-bottom:3px solid transparent; color:#374151; font-weight:700}
   .tab.active{border-color:var(--accent); color:#0b1220}
 
-  /* Topline — airy cards with logos */
+  /* Topline */
   .topline{background:#fbfcff; border-bottom:1px solid var(--border)}
   .topline-inner{max-width:1800px; margin:0 auto; padding:12px 24px; display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
   .tcard{background:var(--card); border:1px solid var(--border); border-radius:12px; padding:10px 12px; display:flex; gap:12px; align-items:center}
@@ -59,7 +55,7 @@
   .tstats{font-size:.98rem; color:var(--muted)} .tstats b{color:var(--text)}
   .delta{font-weight:800; margin-left:6px} .delta.up{color:#16a34a} .delta.down{color:#ef4444}
 
-  /* Page grid — wider center like CBS */
+  /* Page grid */
   .page{display:grid; grid-template-columns:1fr minmax(0,1600px) 320px 1fr; gap:16px}
   .page > .main{grid-column:2}
   .page > .rightbar{grid-column:3}
@@ -128,15 +124,7 @@
     line-height:1.15;
   }
 
-  .party{
-    text-align:center;
-    font-weight:800;
-    color:#0b1220;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    letter-spacing:.3px;
-  }
+  .party{ text-align:center; font-weight:800; color:#0b1220; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:.3px; }
   .votes{font-weight:800; text-align:right}
   .pct{color:var(--muted); text-align:right}
   .party-icon{height:18px; width:auto; display:block; margin-top:2px}
@@ -178,6 +166,9 @@
   @keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
 
   .hidden{display:none !important}
+
+  /* tiny toast */
+  .toast{position:fixed; right:12px; bottom:72px; background:#111827; color:#fff; padding:10px 12px; border-radius:10px; box-shadow:var(--shadow); z-index:1000; font-weight:700}
 </style>
 </head>
 <body>
@@ -349,27 +340,16 @@ const CORE_PARTIES = ["JLP","PNP","JPP","UIC"];
 const TICKER_MAX_AGE = 15*60*1000;   // <= 15 min
 const SIDEBAR_MAX_AGE = 25*60*1000;  // <= 25 min
 
-/* ===== Parity check config (set your two file paths here) ===== */
 /* ===== Data source URLs (proxy-aware) ===== */
 const PROXY_BASE = 'https://decision2025.odaneforsythe.workers.dev/';
-
-/* Direct endpoints */
 const DIRECT_MAIN   = 'https://jamaica-elections.com/general/2025/show/jsonapi.php';
 const DIRECT_BACKUP = 'https://onedrex.net:9443/election/api/view/constituency-details/v2/carlito2025';
-
-/* Wrap through proxy */
 const PROXY_MAIN   = PROXY_BASE + '?url=' + encodeURIComponent(DIRECT_MAIN);
 const PROXY_BACKUP = PROXY_BASE + '?url=' + encodeURIComponent(DIRECT_BACKUP);
-
-/* Decide when to use proxy vs direct
-   - If hosted on GitHub Pages → use proxy
-   - Else (e.g. local file:// or your own domain) → use direct
-*/
 const isGithubPages = /github\.io$/i.test(location.hostname);
-
-const DATA_URL       = isGithubPages ? PROXY_MAIN   : DIRECT_MAIN;
-const MAIN_DATA_URL  = isGithubPages ? PROXY_MAIN   : DIRECT_MAIN;
-const BACKUP_DATA_URL= isGithubPages ? PROXY_BACKUP : DIRECT_BACKUP;
+const DATA_URL        = isGithubPages ? PROXY_MAIN   : DIRECT_MAIN;   // primary data feed
+const MAIN_DATA_URL   = isGithubPages ? PROXY_MAIN   : DIRECT_MAIN;   // parity: main
+const BACKUP_DATA_URL = isGithubPages ? PROXY_BACKUP : DIRECT_BACKUP; // parity: backup
 const PARITY_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
 /* Optional alias (navigation resilience only) */
@@ -397,6 +377,7 @@ const partyKey = p => {
   if (P.startsWith('INDA') || P.startsWith('INDB')) return 'Other';
   return ['JLP','PNP','JPP','UIC'].includes(P) ? P : 'Other';
 };
+const bust = url => url + (url.includes('?') ? '&' : '?') + 'ts=' + Date.now();
 
 /* ===== Tabs ===== */
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
@@ -421,26 +402,27 @@ sel.value = localStorage.getItem('refreshIntervalMs') || String(AUTO_DEFAULT);
 sel.addEventListener('change', ()=>{ localStorage.setItem('refreshIntervalMs', sel.value); setupAutoRefresh(); });
 
 /* ===== Maps ===== */
+const JAMAICA_BOUNDS_LEAF = L.latLngBounds([17.6, -78.6], [18.6, -76.0]);
 function initNationalMap(){
   if (mapNational) return;
-  mapNational = L.map('mapContainer',{zoomControl:true, attributionControl:false, maxBounds:JAMAICA_BOUNDS, maxBoundsViscosity:1});
+  mapNational = L.map('mapContainer',{zoomControl:true, attributionControl:false, maxBounds:JAMAICA_BOUNDS_LEAF, maxBoundsViscosity:1});
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{minZoom:7, maxZoom:15}).addTo(mapNational);
-  mapNational.fitBounds(JAMAICA_BOUNDS);
+  mapNational.fitBounds(JAMAICA_BOUNDS_LEAF);
   mapNational.setMinZoom(mapNational.getZoom());
   document.getElementById('btnResetNational').onclick = ()=>{
-    mapNational.fitBounds(JAMAICA_BOUNDS);
+    mapNational.fitBounds(JAMAICA_BOUNDS_LEAF);
     mapNational.setMinZoom(mapNational.getZoom());
     setTimeout(()=> mapNational.invalidateSize(), 40);
   };
 }
 function initInteractiveMap(){
   if (mapInteractive) return;
-  mapInteractive = L.map('imapMap',{zoomControl:true, attributionControl:false, maxBounds:JAMAICA_BOUNDS, maxBoundsViscosity:1});
+  mapInteractive = L.map('imapMap',{zoomControl:true, attributionControl:false, maxBounds:JAMAICA_BOUNDS_LEAF, maxBoundsViscosity:1});
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{minZoom:7, maxZoom:15}).addTo(mapInteractive);
-  mapInteractive.fitBounds(JAMAICA_BOUNDS);
+  mapInteractive.fitBounds(JAMAICA_BOUNDS_LEAF);
   mapInteractive.setMinZoom(mapInteractive.getZoom());
   document.getElementById('btnResetInteractive').onclick = ()=>{
-    mapInteractive.fitBounds(JAMAICA_BOUNDS);
+    mapInteractive.fitBounds(JAMAICA_BOUNDS_LEAF);
     mapInteractive.setMinZoom(mapInteractive.getZoom());
     focusedKey = null; pendingFocusName = null;
     const cont = document.getElementById('imapContent');
@@ -471,7 +453,7 @@ function buildLegendInto(containerId){
 
 /* ===== Boundaries ===== */
 async function loadECJBoundaries(){
-  const gj = await fetch(ECJ_GEOJSON).then(r=>{ if(!r.ok) throw new Error('Boundaries HTTP '+r.status); return r.json(); });
+  const gj = await fetch(ECJ_GEOJSON, {cache:'no-store'}).then(r=>{ if(!r.ok) throw new Error('Boundaries HTTP '+r.status); return r.json(); });
   arcFeatures = gj.features || [];
   byParish = {}; constNameToNo={}; constNameToParish={};
   arcFeatures.forEach(f=>{
@@ -510,8 +492,8 @@ function buildScoreboard(totals,seats){
    {key:'Other', name:'Others (JPP, UIC, etc.)', color:PARTY_COLORS.Other}].forEach(g=>{
     const votes=totals[g.key]||0, s=seats[g.key]||0, pct=((votes/(totalVotes||1))*100).toFixed(1);
     const delta=s-(prev?.[g.key]||0);
-    const div=document.createElement('div'); div.className='pcard';
     const deltaHtml = delta?`<span class="delta ${delta>0?'up':'down'}">${delta>0?'▲':'▼'} ${Math.abs(delta)}</span>`:'';
+    const div=document.createElement('div'); div.className='pcard';
     div.innerHTML = `<div class="phead"><strong style="color:${g.color}">${g.name}</strong><div class="pmain" style="color:${g.color}">${pct}%</div></div>
       <div class="bar"><span style="width:${pct}%; background:${g.color}"></span></div>
       <div style="margin-top:8px; color:var(--muted)"><b>${s}</b> seats ${deltaHtml} &nbsp;|&nbsp; Votes: ${votes.toLocaleString()}</div>`;
@@ -559,7 +541,7 @@ function paintMap(layer, detailsByConst){
       const strokeColor  = (focusedKey && focusedKey===key) ? '#111827' : '#94a3b8';
       Ly.setStyle({ fillColor: fill, fillOpacity:0.75, color:strokeColor, weight:strokeWeight });
 
-      /* SHOW ALL CANDIDATES IN TOOLTIP (not just top 2) */
+      /* SHOW ALL CANDIDATES IN TOOLTIP */
       const rows = (info.all||[]).map(c=>{
         const party = partyKey(c.party);
         const col = PARTY_COLORS[party] || PARTY_COLORS.Other;
@@ -900,8 +882,10 @@ async function loadData(){
     initNationalMap(); initInteractiveMap();
     buildLegendInto('mapLegend'); buildLegendInto('imapLegend');
 
-    const data = await fetch('https://jamaica-elections.com/general/2025/show/jsonapi.php?ts='+Date.now(), {cache:'no-store'})
-  .then(r=>{ if(!r.ok) throw new Error('Main data HTTP '+r.status); return r.json(); });
+    // Fetch primary election data (proxy-aware)
+    const data = await fetch(bust(DATA_URL), {cache:'no-store'})
+      .then(r=>{ if(!r.ok) throw new Error('Data HTTP '+r.status); return r.json(); });
+
     window.__rawData = data;
 
     if (!geoLayerNational){
@@ -987,7 +971,7 @@ function groupSmallParties(totals,seats,threshold=0.02, keep=[]){
 /* ===== Parity check (Main vs Backup) — using BOXES COUNTED ===== */
 async function fetchJsonSafe(url){
   try{
-    const r = await fetch(url+'?ts='+Date.now(), {cache:'no-store'});
+    const r = await fetch(bust(url), {cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     return await r.json();
   }catch(e){ return {__error: e.message || 'fetch-error'}; }
