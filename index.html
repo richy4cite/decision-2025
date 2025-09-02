@@ -18,13 +18,13 @@
     --tabh:48px; /* approx tabs height */
   }
   html[data-theme="dark"]{
-    --bg:#0f172a;            /* slate-900-ish */
-    --text:#e5e7eb;          /* slate-200 */
-    --muted:#9ca3af;         /* slate-400 */
-    --border:#334155;        /* slate-700 */
-    --accent:#60a5fa;        /* blue-400 */
-    --card:#111827;          /* slate-800 */
-    --card-alt:#0b1220;      /* extra dark */
+    --bg:#0f172a;
+    --text:#e5e7eb;
+    --muted:#9ca3af;
+    --border:#334155;
+    --accent:#60a5fa;
+    --card:#111827;
+    --card-alt:#0b1220;
     --shadow:0 6px 18px rgba(0,0,0,.35);
   }
 
@@ -68,7 +68,7 @@
   .tstats{font-size:.98rem; color:var(--muted)} .tstats b{color:var(--text)}
   .delta{font-weight:800; margin-left:6px} .delta.up{color:#16a34a} .delta.down{color:#ef4444}
 
-/* Page grid */
+  /* Page grid */
   .page{display:grid; grid-template-columns:1fr minmax(0,1600px) 320px 1fr; gap:16px}
   .page > .main{grid-column:2}
   .page > .rightbar{grid-column:3}
@@ -87,68 +87,6 @@
     -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none; opacity:.2; animation:spin 12s linear infinite}
   @keyframes spin{to{--angle:360deg}}
   .age-good{border-color:var(--good)} .age-warn{border-color:var(--warn)} .age-bad{border-color:var(--bad)}
-  
-  /* === "Recently Updated" items — compact & readable in 220px === */
-.sideitem{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:10px;                    /* tighter gap */
-  padding:6px 8px;             /* tighter padding */
-  margin:8px 0;
-  font-weight:800;
-  background:var(--card);
-  color:var(--text);
-  border:2px solid var(--border);
-  border-radius:12px;
-  cursor:pointer;
-}
-.sideitem > span:first-child{
-  /* constituency number (left) */
-  font-variant-numeric:tabular-nums;
-  letter-spacing:.2px;
-}
-.sideitem > small:last-child{
-  /* timer (right) */
-  color:var(--muted);
-  font-weight:700;
-  font-size:.88em;
-  font-variant-numeric:tabular-nums;
-}
-
-/* keep the animated ring, but reduce intensity for narrow width */
-.sideitem::before{
-  content:"";
-  position:absolute;
-  inset:-2px;
-  border-radius:14px;
-  padding:2px;
-  background:conic-gradient(from var(--angle,0deg),
-    rgba(22,163,74,.9), rgba(245,158,11,.9), rgba(239,68,68,.9), rgba(22,163,74,.9));
-  -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite:xor; mask-composite:exclude;
-  pointer-events:none;
-  opacity:.18;                 /* a touch subtler */
-  animation:spin 12s linear infinite;
-}
-
-/* age-based outline colors (works in light & dark) */
-.age-good{ border-color:var(--good) }
-.age-warn{ border-color:var(--warn) }
-.age-bad { border-color:var(--bad)  }
-
-/* Optional hover feedback (theme-aware) */
-.sideitem:hover{
-  background:color-mix(in oklab, var(--card) 92%, var(--bg));
-  filter:brightness(1.02);
-}
-
-/* Dark mode fine-tuning (keeps contrast crisp) */
-html[data-theme="dark"] .sideitem{
-  background:var(--card);
-  border-color:var(--border);
-}
-html[data-theme="dark"] .sideitem::before{ opacity:.22; } /* a bit brighter in dark */
 
   /* Sections / cards */
   .container{max-width:1600px; margin:14px auto; padding:0 24px}
@@ -248,6 +186,28 @@ html[data-theme="dark"] .sideitem::before{ opacity:.22; } /* a bit brighter in d
 
   .hidden{display:none !important}
   .toast{position:fixed; right:12px; bottom:72px; background:#111827; color:#fff; padding:10px 12px; border-radius:10px; box-shadow:var(--shadow); z-index:1000; font-weight:700}
+
+  /* ===== Preview Modal ===== */
+  .modal{position:fixed; inset:0; display:none; z-index:999}
+  .modal.show{display:block}
+  .modal-backdrop{position:absolute; inset:0; background:rgba(0,0,0,.45)}
+  .modal-content{
+    position:relative; margin:6vh auto; width:min(92vw, 980px);
+    background:var(--card); color:var(--text);
+    border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow);
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .modal-header{padding:10px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; gap:10px}
+  .modal-header h3{margin:0; font-size:1.05rem; font-weight:800}
+  .modal-hint{color:var(--muted); font-size:.9rem}
+  .modal-close{
+    position:absolute; top:6px; right:8px; border:1px solid var(--border); background:var(--card);
+    color:var(--text); border-radius:8px; padding:4px 10px; font-size:1.2rem; cursor:pointer; font-weight:900;
+  }
+  #previewMap{height:min(62vh, 560px); background:var(--card-alt)}
+  .modal-footer{display:flex; justify-content:flex-end; gap:10px; padding:10px 14px; border-top:1px solid var(--border); background:var(--card)}
+  .btn-primary{background:var(--accent); color:#fff; border:1px solid color-mix(in oklab, var(--accent) 70%, #000);}
+  .btn-secondary{background:var(--card); color:var(--text)}
 </style>
 </head>
 <body>
@@ -400,6 +360,23 @@ html[data-theme="dark"] .sideitem::before{ opacity:.22; } /* a bit brighter in d
     </div>
   </div>
 
+  <!-- ===== Preview Modal (new) ===== -->
+  <div id="previewModal" class="modal" aria-hidden="true">
+    <div class="modal-backdrop" id="previewBackdrop"></div>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+      <button class="modal-close" id="previewClose" aria-label="Close">×</button>
+      <div class="modal-header">
+        <h3 id="previewTitle">Constituency Preview</h3>
+        <div class="modal-hint">Review the area below · Use the button to open the Interactive Map</div>
+      </div>
+      <div id="previewMap"></div>
+      <div class="modal-footer">
+        <button id="btnPreviewClose" class="btn btn-secondary">Close</button>
+        <button id="btnPreviewGo" class="btn btn-primary">Go to Interactive</button>
+      </div>
+    </div>
+  </div>
+
 <script>
 /* ===== Config ===== */
 const AUTO_DEFAULT = 60000;
@@ -424,10 +401,6 @@ const PARTY_SYMBOLS = {
 const CORE_PARTIES = ["JLP","PNP","JPP","UIC"];
 const TICKER_MAX_AGE = 15*60*1000;
 const SIDEBAR_MAX_AGE = 25*60*1000;
-
-document.getElementById('btnForceRefresh').addEventListener('click', ()=>{
-  loadECJAndData();  // force an immediate reload of JSON + redraw
-});
 
 /* ===== Data source URLs (proxy-aware with fallbacks) ===== */
 const PROXY_BASE = 'https://decision2025.odaneforsythe.workers.dev/';
@@ -466,6 +439,10 @@ let lastSeats = JSON.parse(localStorage.getItem('lastSeats') || '{}');
 let lastConstHashes = JSON.parse(localStorage.getItem('constituencyHashes')||'{}');
 let lastConstUpdated = JSON.parse(localStorage.getItem('constituencyUpdated')||'{}');
 
+/* ===== NEW: Preview state ===== */
+let previewMap=null, previewLayer=null, baseLightPrev=null, baseDarkPrev=null;
+let previewKey=null;
+
 /* ===== Utils ===== */
 function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>t.remove(),4000); }
 function contrastText(hex){ try{ const c=hex.replace('#',''); const r=parseInt(c.slice(0,2),16),g=parseInt(c.slice(2,4),16),b=parseInt(c.slice(4,6),16); return ((r*299+g*587+b*114)/1000>=140)?'#0b1220':'#ffffff'; }catch{ return '#0b1220'; } }
@@ -478,7 +455,7 @@ const bust = url => url + (url.includes('?') ? '&' : '?') + 'ts=' + Date.now();
 function applyTheme(theme){
   document.documentElement.setAttribute('data-theme', theme);
   document.getElementById('modeBtn').textContent = theme==='dark' ? '🌙 Dark' : '🌞 Light';
-  // switch map basemap
+  // switch basemaps
   if (mapNational && baseLightNat && baseDarkNat){
     if (theme==='dark' && currentBase!=='dark'){ mapNational.removeLayer(baseLightNat); baseDarkNat.addTo(mapNational); currentBase='dark'; }
     if (theme==='light' && currentBase!=='light'){ mapNational.removeLayer(baseDarkNat); baseLightNat.addTo(mapNational); currentBase='light'; }
@@ -488,6 +465,13 @@ function applyTheme(theme){
     if (theme==='dark'){ mapInteractive.removeLayer(baseLightInt); baseDarkInt.addTo(mapInteractive); }
     else { mapInteractive.removeLayer(baseDarkInt); baseLightInt.addTo(mapInteractive); }
     setTimeout(()=>mapInteractive.invalidateSize(), 60);
+  }
+  // NEW: preview map base layer
+  if (previewMap && baseLightPrev && baseDarkPrev){
+    const dark = theme==='dark';
+    if (dark && previewMap.hasLayer(baseLightPrev)){ previewMap.removeLayer(baseLightPrev); baseDarkPrev.addTo(previewMap); }
+    if (!dark && previewMap.hasLayer(baseDarkPrev)){ previewMap.removeLayer(baseDarkPrev); baseLightPrev.addTo(previewMap); }
+    setTimeout(()=>previewMap.invalidateSize(), 60);
   }
 }
 function initTheme(){
@@ -943,7 +927,10 @@ function renderParishBlocks(detailsByConst, rawData){
           <div class="rows">${rowsHTML}</div>
         </div>
       `;
-      el.addEventListener('click', ()=> gotoInteractiveKey(key));
+
+      /* CHANGE: click opens preview modal instead of jumping to Interactive */
+      el.addEventListener('click', ()=> openPreviewForKey(key));
+
       grid.appendChild(el);
     });
 
@@ -1083,8 +1070,8 @@ async function loadECJAndData(){
     }
 
     const partyTotals={JLP:0, PNP:0, JPP:0, UIC:0, Other:0};
-const partySeats ={JLP:0, PNP:0, JPP:0, UIC:0, Other:0};
-const detailsByConst={}, closestArr=[];
+    const partySeats ={JLP:0, PNP:0, JPP:0, UIC:0, Other:0};
+    const detailsByConst={}, closestArr=[];
     Object.values(data).forEach(c=>{
       const cname=c?.Name||''; const cData=Array.isArray(c?.Data)? c.Data[0] : c?.Data;
       const cand = Array.isArray(cData?.Candidates)? cData.Candidates : [];
@@ -1117,7 +1104,7 @@ const detailsByConst={}, closestArr=[];
       detailsByConst[key] = { party:partyKey(winner?.Party), all: sorted };
       cand.forEach(k=>{ const p=partyKey(k.Party); partyTotals[p]=(partyTotals[p]||0)+safeVote(k.Votes); });
       const wParty = partyKey(winner?.Party);
-partySeats[wParty] = (partySeats[wParty] ?? 0) + 1;
+      partySeats[wParty] = (partySeats[wParty] ?? 0) + 1;
 
       const topPct = sorted[0]?.pct||0, runnerPct=sorted[1]?.pct||0;
       closestArr.push({
@@ -1347,6 +1334,59 @@ function focusConstituencyByName(nameOrKey, isKey=false){
   }
 }
 
+/* ===== NEW: Preview modal map ===== */
+function initPreviewMap(){
+  if (previewMap) return;
+  previewMap = L.map('previewMap',{zoomControl:true, attributionControl:false});
+
+  // basemaps (theme-aware)
+  baseLightPrev = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{minZoom:7, maxZoom:15});
+  baseDarkPrev  = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{minZoom:7, maxZoom:15});
+  (document.documentElement.getAttribute('data-theme')==='dark' ? baseDarkPrev : baseLightPrev).addTo(previewMap);
+}
+function openPreviewForKey(key){
+  previewKey = key;
+  const modal = document.getElementById('previewModal');
+  modal.classList.add('show');
+  initPreviewMap();
+
+  // Build fresh layer, highlight target; others muted
+  if (previewLayer){ previewLayer.remove(); previewLayer=null; }
+  previewLayer = L.geoJSON({type:'FeatureCollection', features: arcFeatures}, {
+    style:(feat)=>{
+      const nm = feat?.properties?.CONST_NAME || '';
+      const k  = norm(nm);
+      const isTarget = (k===key);
+      const fill = isTarget ? (leaderColors[key] || '#60a5fa') : '#cbd5e1';
+      return { color: isTarget ? '#111827' : '#94a3b8', weight: isTarget ? 3 : 1, fillColor: fill, fillOpacity: isTarget ? 0.8 : 0.5 };
+    }
+  }).addTo(previewMap);
+
+  // Fit to parish bounds (semi-zoom)
+  let target=null, parish=null;
+  previewLayer.eachLayer(l=>{
+    const nm = l.feature?.properties?.CONST_NAME || '';
+    const k  = norm(nm);
+    if (k===key){ target=l; parish=l.feature?.properties?.PARISH_NAM; }
+  });
+  if (target){
+    const grp = [];
+    previewLayer.eachLayer(l=>{
+      if (l.feature?.properties?.PARISH_NAM===parish) grp.push(l);
+    });
+    const bounds = (grp.length ? L.featureGroup(grp) : target).getBounds();
+    try{ previewMap.fitBounds(bounds, {padding:[24,24]}); }catch(_){}
+  }
+  setTimeout(()=> previewMap.invalidateSize(), 60);
+}
+function closePreview(){
+  const modal = document.getElementById('previewModal');
+  modal.classList.remove('show');
+  // keep previewKey; we'll use it if user clicks "Go to Interactive" right after close via Esc/backdrop? (No, we reset:)
+  // For clarity, reset:
+  // previewKey = null;  // (optional to reset here)
+}
+
 /* ===== Auto ===== */
 function setupAutoRefresh(){
   if (refreshTimer) clearInterval(refreshTimer);
@@ -1367,6 +1407,20 @@ function setupAutoRefresh(){
   // Parity check now and every 5 minutes (Boxes Counted)
   runParityCheck();
   setInterval(runParityCheck, PARITY_INTERVAL_MS);
+
+  // Manual refresh button (FIXED to call loadECJAndData)
+  document.getElementById('btnForceRefresh').addEventListener('click', ()=> loadECJAndData() );
+
+  // Preview modal controls
+  document.getElementById('previewClose').addEventListener('click', closePreview);
+  document.getElementById('previewBackdrop').addEventListener('click', closePreview);
+  document.getElementById('btnPreviewClose').addEventListener('click', closePreview);
+  document.getElementById('btnPreviewGo').addEventListener('click', ()=>{
+    const key = previewKey;
+    closePreview();
+    if (key) gotoInteractiveKey(key);
+  });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closePreview(); });
 })();
 </script>
 </body>
